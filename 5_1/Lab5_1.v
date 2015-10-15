@@ -1,0 +1,130 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    12:07:05 08/26/2015 
+// Design Name: 
+// Module Name:    Lab5_1 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module Lab5_1(
+   input clk,
+	input rst_n,
+	input in,
+	//input [1:0]sel,
+	output [3:0] ftsd_ctl,
+	output [14:0] display,
+	output [14:0] LED,
+	output sel_out
+    );
+
+	wire [3:0] bcd;
+	wire [1:0] clk_ctl;
+	//reg [3:0] in0, in1, in2, in3;
+	wire [3:0] in0, in1, in2, in3;
+	wire clk_out;//counter and fsm
+	wire sel_out;//for counter stop or start
+	wire [3:0] out0, out1, out2, out3;
+	wire clk_debounce;
+	wire pb_debounced;
+	wire fsm_in;
+	
+	assign in0=4'd0;
+	assign in1=4'd0;
+	assign in2=4'd3;
+	assign in3=4'd0;
+	/*always@(*)begin
+	if(sel==2'b00)
+	begin
+	 in0=4'd0;
+	 in1=4'd0;
+	 in2=4'd1;
+	 in3=4'd5;
+	end
+	else if(sel==2'b01)
+	begin 
+	 in0=4'd0;
+	 in1=4'd0;
+	 in2=4'd3;
+	 in3=4'd0;
+	end 
+	else if(sel==2'b10) begin
+	 in0=4'd0;
+	 in1=4'd1;
+	 in2=4'd0;
+	 in3=4'd0;
+	 end
+	else
+	begin
+	 in0=4'd0;
+	 in1=4'd5;
+	 in2=4'd0;
+	 in3=4'd0;
+	end
+	end*/
+	
+freq_div f1(
+	.clk_out(clk_out),//for counter
+	.clk_ctl(clk_ctl), // divided clock output
+	.clk_150(clk_debounce),//for 150HZ
+	.clk(clk), // global clock input
+	.rst_n(rst_n) // active low reset
+	);
+fsm fl(
+	.clk(clk),
+	.rst(rst_n),
+	.sel_out(sel_out),
+	.in(fsm_in)
+);
+bcd_dis b1( 
+	.display(display), // 14-segment display output
+	.bcd(bcd) // BCD input
+	);
+	
+counter c1(
+	.clk(clk_out),
+	.sel_in(sel_out),
+	.in0(in0),
+	.in1(in1),
+	.in2(in2),
+	.in3(in3),
+	.out0(out0),
+	.out1(out1),
+	.out2(out2),
+	.out3(out3),
+	.rst(rst_n),
+	.LED(LED)
+);
+scan s1(
+	.ftsd_ctl(ftsd_ctl), // ftsd display control signal 
+	.ftsd_in(bcd), // output to ftsd display
+	.in0(out0), // 1st input
+	.in1(out1), // 2nd input
+	.in2(out2), // 3rd input
+	.in3(out3), // 4th input
+	.ftsd_ctl_en(clk_ctl) // divided clock for scan control
+	);
+debon dl(
+.clk(clk_debounce), // clock control
+.rst_n(rst_n), // reset
+.pb_in(in), //push button input
+.pb_debounced(pb_debounced) // debounced push button output
+);
+one_pause one(
+.clk(clk), // clock input
+.rst_n(rst_n), //active low reset
+.in_trig(pb_debounced), // input trigger
+.out_pulse(fsm_in) // output one pulse
+);
+endmodule
